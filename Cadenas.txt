@@ -1,0 +1,8 @@
+// Prueba cadenas:
+
+cadena1 = "Hola mundo";
+cadena2="mi nombre es " + "Pon aqui tu nombre"
+cadena3="cadena incompleta
+cadena4=hola mundo
+cadena5=hola mundo";
+

@@ -1,0 +1,16 @@
+// Prueba de comentarios:
+
+/* Este es un comentario
+ * multilinea y por lo tanto
+ * no genera error
+ */
+
+/*
+ *
+ *
+ * /
+ var id = 0;
+ */
+
+// var var1 = 0;
+/ /Prueba de comentario de una linea

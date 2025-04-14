@@ -1,0 +1,6 @@
+// Caracteres no válidos:
+
+if((2>=2)){
+	arreglo1[i]=0;
+}
+var1 = true ? "hola" : "mundo".;

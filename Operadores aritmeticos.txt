@@ -1,0 +1,8 @@
+// Prueba operadores aritmeticos:
+var1=517+96;
+var2=517-96;
+var3=517*96;
+var4=517/96;
+var5=517//96;
+var6=var1+var2-var3*(var4-var5);
+var7="hola" + " " + "mundo";

@@ -1,0 +1,16 @@
+// Prueba operadores relacionales:
+5<5
+5<=40
+5 < = 40
+edad>anio
+edad>=anio
+edad> = anio
+5==4;
+5= == 4;
+edad1 = = edad2
+edad1!=edad2
+edad1 != edad2
+edad1 ! = edad2
+edad1!edad2
+5=>5
+5=<5

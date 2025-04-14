@@ -1,0 +1,6 @@
+// Prueba operadores logicos:
+5 and 5
+5 and5
+edad and(mes or anio)
+5 or 5
+5 or5

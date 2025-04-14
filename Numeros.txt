@@ -1,0 +1,8 @@
+numero1=0;
+numero2=123.457;
+numero3 = 117.95E-4;
+numero4 = 12.5E12;
+numero5=0.E12;
+numero6=1000
+ 
+

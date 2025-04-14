@@ -1,0 +1,27 @@
+// Prueba identificadores y palabras reservadas:
+var radio = 5;
+var pi = "3.1416";
+var area = pi*radio *radio;
+
+print "El area es: ";
+print area;
+
+if(area>100){
+	for(inicializacion;condicion;incremento){
+		return;
+	}
+}
+else{
+	print null;
+}
+
+while(true){
+	// Bucle infinito
+
+}
+
+fun funcion1(){
+	while(true or false){
+		
+	}
+}
