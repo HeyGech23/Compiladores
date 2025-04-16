@@ -1,24 +1,6 @@
 import sys
 import difflib
-
-# Palabras clave, operadores y puntuación
-PALABRAS_CLAVE = {
-    "else": "SINO", "fun": "FUNCION", "print": "IMPRIMIR", "var": "VARIABLE",
-    "false": "FALSO", "true": "VERDADERO", "return": "RETORNO",
-    "while": "MIENTRAS", "if": "SI", "for": "PARA", "null": "NULO",
-    "and": "Y", "or": "O"
-}
-
-OPERADORES = {"+", "-", "*", "/", "<", "<=", ">", ">=", "==", "!=", "=", "!"}
-PUNTUACION = {"(", ")", "{", "}", ";", ","}
-
-TIPOS_TOKEN = {
-    "NUMERO": "NUMERO",
-    "CADENA": "CADENA",
-    "IDENTIFICADOR": "IDENTIFICADOR",
-    "EOF": "EOF",
-}
-
+from gramatica import PALABRAS_CLAVE, PUNTUACION, OPERADORES, TIPOS_TOKEN
 
 class Escaner:
     def __init__(self, codigo_fuente):
@@ -26,7 +8,51 @@ class Escaner:
         self.tokens = []
         self.actual = 0
         self.linea = 1
-        self.pila_parentesis = []  # Para verificar balance de paréntesis
+        self.pila_parentesis = []# Para verificar balance de paréntesis
+
+    def verificar_cabecera_for(self):
+        """
+        Verifica que la cabecera del for tenga exactamente dos ';' y esté bien balanceada.
+        """
+        # Saltar espacios y saltos de línea antes del paréntesis
+        while self.actual < len(self.fuente) and self.fuente[self.actual].isspace():
+            if self.fuente[self.actual] == "\n":
+                self.linea += 1
+            self.actual += 1
+
+        # Debe haber un '('
+        if self.actual >= len(self.fuente) or self.fuente[self.actual] != '(':
+            raise SyntaxError(f"Error sintáctico en la línea {self.linea}: se esperaba '(' después de 'for'.")
+
+        self.actual += 1  # Saltar el '('
+
+        contenido = ""
+        profundidad = 1
+
+        while self.actual < len(self.fuente) and profundidad > 0:
+            c = self.fuente[self.actual]
+            if c == "(":
+                profundidad += 1
+            elif c == ")":
+                profundidad -= 1
+                if profundidad == 0:
+                    break
+            if profundidad > 0:
+                contenido += c
+            if c == "\n":
+                self.linea += 1
+            self.actual += 1
+
+        if profundidad != 0:
+            raise SyntaxError(f"Error sintáctico en la línea {self.linea}: se esperaba ')' en la cabecera del for.")
+
+        n_puntosycoma = contenido.count(";")
+        if n_puntosycoma != 2:
+            raise SyntaxError(
+                f"Error sintáctico en la línea {self.linea}: la cabecera del for debe tener 2 ';', pero tiene {n_puntosycoma}. "
+                f"Cabecera: ({contenido.strip()})"
+            )
+        self.actual += 1  # Saltar el ')'
 
     def escanear_tokens(self):
         """
@@ -97,8 +123,10 @@ class Escaner:
             self.actual += 1
         lexema = self.fuente[inicio:self.actual]
 
+
         if lexema in PALABRAS_CLAVE:
             self.agregar_token(PALABRAS_CLAVE[lexema])
+
         else:
             # Verificar si es similar a alguna palabra clave conocida
             sugerencias = difflib.get_close_matches(lexema, PALABRAS_CLAVE.keys(), n=1, cutoff=0.8)
@@ -176,6 +204,9 @@ class Escaner:
     def agregar_token(self, tipo, literal=None):
         texto = self.fuente[self.actual - 1] if self.actual > 0 else ""
         self.tokens.append({"tipo": tipo, "lexema": texto, "literal": literal, "linea": self.linea})
+
+    def reportar_error(self, param):
+        pass
 
 
 def analizar_archivo(ruta_archivo):

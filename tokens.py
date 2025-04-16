@@ -26,3 +26,4 @@ TIPOS_TOKEN = {
     "EOF": "EOF",
     "ERROR": "ERROR"
 }
+
