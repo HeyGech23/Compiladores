@@ -1,0 +1,5 @@
+// Practica 9: Probar operadores unarios
+// Tiene errores sintácticos. Pista: paréntesis balanceados
+
+var areaNegativa = -(base * (altura) / 2;
+print !area;

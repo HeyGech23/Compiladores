@@ -1,0 +1,5 @@
+// Practica 10: Usar parentesis para agrupar operaciones
+// Tiene errores sintácticos. Pista: verificar consistencia de operadores
+
+var calculo = (5 * (4 - 3 * (2 / 5)) / 2) - (2*9 / 3 (2 + 6));
+print area;

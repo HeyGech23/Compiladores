@@ -17,7 +17,6 @@ fun mayor(num1, num2, num3, ){
 
     return -1;
 
-
 var numero1 = 0; // Introduce un numero
 var numero2 = 0; // Introduce un numero
 var numero3 = 0; // Introduce un numero

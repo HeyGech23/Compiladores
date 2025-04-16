@@ -58,9 +58,13 @@ class Escaner:
 
         # Leer nombre de la función (identificador)
         inicio_nombre = self.actual
-        while self.actual < len(self.fuente) and (self.fuente[self.actual].isalnum() or self.fuente[self.actual] == "_"):
+        while self.actual < len(self.fuente) and (
+                self.fuente[self.actual].isalnum() or self.fuente[self.actual] == "_"):
             self.actual += 1
         nombre_funcion = self.fuente[inicio_nombre:self.actual].strip()
+        if not nombre_funcion:
+            raise SyntaxError(
+                f"Error sintáctico en la línea {self.linea}: falta el nombre de la función después de 'fun'.")
 
         # Saltar espacios en blanco otra vez
         while self.actual < len(self.fuente) and self.fuente[self.actual].isspace():
@@ -70,7 +74,8 @@ class Escaner:
 
         # Debe aparecer un '('
         if self.actual >= len(self.fuente) or self.fuente[self.actual] != '(':
-            raise SyntaxError(f"Error sintáctico en la línea {self.linea}: se esperaba '(' después del nombre de la función '{nombre_funcion}'.")
+            raise SyntaxError(
+                f"Error sintáctico en la línea {self.linea}: se esperaba '(' después del nombre de la función '{nombre_funcion}'.")
 
         self.actual += 1  # Saltar '('
 
@@ -98,52 +103,103 @@ class Escaner:
             raise SyntaxError(f"Error sintáctico en la línea {self.linea}: se esperaba ')' en parámetros de función.")
         self.actual += 1  # Saltar ')'
 
+        # Saltar espacios antes de la llave
+        while self.actual < len(self.fuente) and self.fuente[self.actual].isspace():
+            if self.fuente[self.actual] == "\n":
+                self.linea += 1
+            self.actual += 1
+
+        # Debe aparecer una llave de apertura
+        if self.actual >= len(self.fuente) or self.fuente[self.actual] != "{":
+            raise SyntaxError(
+                f"Error sintáctico en la línea {self.linea}: se esperaba '{{' después de los parámetros de la función '{nombre_funcion}'."
+            )
+        self.actual += 1  # Saltar '{'
+        inicio_cuerpo = self.actual
+        profundidad_llave = 1
+
+        while self.actual < len(self.fuente) and profundidad_llave > 0:
+            c = self.fuente[self.actual]
+            if c == "{":
+                profundidad_llave += 1
+            elif c == "}":
+                profundidad_llave -= 1
+                if profundidad_llave == 0:
+                    # Verifica que haya algo entre las llaves (con contenido real)
+                    cuerpo = self.fuente[inicio_cuerpo:self.actual]
+                    if not any(not x.isspace() for x in cuerpo):
+                        raise SyntaxError(
+                            f"Error sintáctico en la línea {self.linea}: el cuerpo de la función '{nombre_funcion}' está vacío."
+                        )
+                    break
+            if c == '\n':
+                self.linea += 1
+            self.actual += 1
+
+        if profundidad_llave != 0:
+            raise SyntaxError(
+                f"Error sintáctico en la línea {self.linea}: se esperaba '}}' para cerrar el cuerpo de la función '{nombre_funcion}'.")
+        self.actual += 1  # Saltar '}'
+
     def escanear_tokens(self):
         while self.actual < len(self.fuente):
             caracter = self.fuente[self.actual]
+
             if caracter.isspace():
+                # Si es un espacio en blanco, salta a la siguiente posición
                 if caracter == "\n":
                     self.linea += 1
                 self.actual += 1
-            elif caracter == "/" and self.siguiente_es("/"):
+            elif self.siguiente_es("//"):  # Comentarios de una sola línea
                 self.saltar_comentario_linea()
-            elif caracter == "/" and self.siguiente_es("*"):
+            elif self.siguiente_es("/*"):  # Comentarios de bloque
                 self.saltar_comentario_bloque()
-            elif caracter.isalpha() or caracter == "_":
+            elif caracter.isalpha() or caracter == "_":  # Identificadores (funciones, variables)
                 self.manejar_identificador()
-            elif caracter in PUNTUACION:
+            elif caracter in PUNTUACION:  # Manejo de puntuaciones (paréntesis, llaves, etc.)
                 self.manejar_puntuacion(caracter)
                 self.actual += 1
-            elif caracter == '"' or caracter == "'":
+            elif caracter == '"' or caracter == "'":  # Cadenas
                 self.manejar_cadena(caracter)
-            elif caracter.isdigit():
+            elif caracter.isdigit():  # Números
                 self.manejar_numero()
             else:
-                self.actual += 1  # Ignorar otros caracteres por ahora
+                # Si el carácter no es reconocido, avanzamos un paso
+                self.actual += 1
 
+        # Verifica si hay paréntesis o llaves que no se han cerrado
         if self.pila_parentesis:
             char, linea = self.pila_parentesis[-1]
+            lexema = self.fuente[self.actual - 1] if self.actual > 0 else "fin de archivo"
             if char == "{":
-                raise SyntaxError(f"Error sintáctico en la línea {linea}: Se esperaba '}}' pero no se encontró.")
-            else:
-                raise SyntaxError(f"Error sintáctico en la línea {linea}: Se esperaba ')' pero no se encontró.")
+                raise SyntaxError(
+                    f"Error sintáctico en la línea {linea}: Se esperaba '}}' pero se encontró '{lexema}'.")
+            elif char == "(":
+                raise SyntaxError(f"Error sintáctico en la línea {linea}: Se esperaba ')' pero se encontró '{lexema}'.")
 
     def manejar_identificador(self):
         inicio = self.actual
-        while self.actual < len(self.fuente) and (self.fuente[self.actual].isalnum() or self.fuente[self.actual] == "_"):
+        while self.actual < len(self.fuente) and (
+                self.fuente[self.actual].isalnum() or self.fuente[self.actual] == "_"):
             self.actual += 1
         lexema = self.fuente[inicio:self.actual]
+
         if lexema in PALABRAS_CLAVE:
-            self.agregar_token(PALABRAS_CLAVE[lexema])
-            if lexema == "for":
-                self.verificar_cabecera_for()
-            elif lexema == "fun":
-                self.verificar_parametros_funcion()
+            if lexema == "fun":
+                # Solo agregar el token si toda la definición es válida
+                try:
+                    self.verificar_parametros_funcion()
+                    self.agregar_token(PALABRAS_CLAVE[lexema], lexema)
+                except SyntaxError as e:
+                    raise e
+            else:
+                self.agregar_token(PALABRAS_CLAVE[lexema], lexema)
         else:
             sugerencias = difflib.get_close_matches(lexema, PALABRAS_CLAVE.keys(), n=1, cutoff=0.8)
             if sugerencias:
                 sugerencia = sugerencias[0]
-                raise SyntaxError(f"Error sintáctico en la línea {self.linea}. Se esperaba '{sugerencia}' pero se encontró '{lexema}'.")
+                raise SyntaxError(
+                    f"Error sintáctico en la línea {self.linea}. Se esperaba '{sugerencia}' pero se encontró '{lexema}'.")
             else:
                 self.agregar_token("IDENTIFICADOR", lexema)
 
@@ -208,8 +264,13 @@ class Escaner:
         raise SyntaxError(f"Error sintáctico en la línea {self.linea}: se esperaba '*/' para cerrar el bloque.")
 
     def agregar_token(self, tipo, literal=None):
-        texto = self.fuente[self.actual - 1] if self.actual > 0 else ""
-        self.tokens.append({"tipo": tipo, "lexema": texto, "literal": literal, "linea": self.linea})
+        lexema = literal if literal is not None else self.fuente[self.actual - 1]
+        self.tokens.append({
+            "tipo": tipo,
+            "lexema": lexema,
+            "literal": literal,
+            "linea": self.linea
+        })
 
     def reportar_error(self, param):
         pass
@@ -231,3 +292,4 @@ if __name__ == "__main__":
         analizar_archivo(sys.argv[1])
     else:
         print("Uso: python Escaner.py [nombre_del_archivo]")
+
