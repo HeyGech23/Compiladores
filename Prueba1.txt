@@ -1,0 +1,7 @@
+// Prueba 1: Probar print y concatenacion
+// Tiene errores sintácticos. Pista: verificar el print
+
+var nombre = "Nombre";
+var apellido = "Apellido";
+
+pritn "Hola soy " + nombre + " " + apellido;

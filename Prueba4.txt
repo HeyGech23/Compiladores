@@ -1,0 +1,13 @@
+// Prueba 4: Probar el while y el if anidados
+// No tiene errores sintácticos
+
+var i = "Hola mundo";
+
+while (i < N){
+    i = i+1;
+
+    if(i == 100){
+        i = N;
+    }
+    print i;
+}

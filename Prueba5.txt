@@ -1,0 +1,8 @@
+// Prueba 5: Probar las funciones
+// No tiene errores sintácticos
+
+fun fun_eval(x){
+    return 2*x*x + 3*x + -2;
+}
+
+print fun_eval();

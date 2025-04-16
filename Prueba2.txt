@@ -1,0 +1,8 @@
+// Prueba 2: Probar el if-else sin llaves
+// Tiene errores sintácticos. Pista: parentesis
+
+var edad = 0; // Coloca tu edad
+if (edad < 18
+    print "Eres menor de edad";
+else
+    print "Eres mayor de edad";
