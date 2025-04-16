@@ -144,38 +144,32 @@ class Escaner:
     def escanear_tokens(self):
         while self.actual < len(self.fuente):
             caracter = self.fuente[self.actual]
-
             if caracter.isspace():
-                # Si es un espacio en blanco, salta a la siguiente posición
                 if caracter == "\n":
                     self.linea += 1
                 self.actual += 1
-            elif self.siguiente_es("//"):  # Comentarios de una sola línea
+            elif caracter == "/" and self.siguiente_es("/"):
                 self.saltar_comentario_linea()
-            elif self.siguiente_es("/*"):  # Comentarios de bloque
+            elif caracter == "/" and self.siguiente_es("*"):
                 self.saltar_comentario_bloque()
-            elif caracter.isalpha() or caracter == "_":  # Identificadores (funciones, variables)
+            elif caracter.isalpha() or caracter == "_":
                 self.manejar_identificador()
-            elif caracter in PUNTUACION:  # Manejo de puntuaciones (paréntesis, llaves, etc.)
+            elif caracter in PUNTUACION:
                 self.manejar_puntuacion(caracter)
                 self.actual += 1
-            elif caracter == '"' or caracter == "'":  # Cadenas
+            elif caracter == '"' or caracter == "'":
                 self.manejar_cadena(caracter)
-            elif caracter.isdigit():  # Números
+            elif caracter.isdigit():
                 self.manejar_numero()
             else:
-                # Si el carácter no es reconocido, avanzamos un paso
-                self.actual += 1
+                self.actual += 1  # Ignorar otros caracteres por ahora
 
-        # Verifica si hay paréntesis o llaves que no se han cerrado
         if self.pila_parentesis:
             char, linea = self.pila_parentesis[-1]
-            lexema = self.fuente[self.actual - 1] if self.actual > 0 else "fin de archivo"
             if char == "{":
-                raise SyntaxError(
-                    f"Error sintáctico en la línea {linea}: Se esperaba '}}' pero se encontró '{lexema}'.")
-            elif char == "(":
-                raise SyntaxError(f"Error sintáctico en la línea {linea}: Se esperaba ')' pero se encontró '{lexema}'.")
+                raise SyntaxError(f"Error sintáctico en la línea {linea}: Se esperaba '}}' pero se encontró ")
+            else:
+                raise SyntaxError(f"Error sintáctico en la línea {linea}: Se esperaba ')' pero se encontró ")
 
     def manejar_identificador(self):
         inicio = self.actual
