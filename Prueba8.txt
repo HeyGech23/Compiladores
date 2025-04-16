@@ -1,0 +1,26 @@
+// Prueba 8: Funciones con muchos parametros, return
+// Tiene errores sintácticos. Pista: parámetros de la funcion y llaves
+
+fun mayor(num1, num2, num3, ){
+    if (num1 > num2 and num1 > num3){
+        return num1;
+    }
+    else if (num2 > num1 and num2 > num3){
+        return num2;
+    }
+    else if (num2 > num1 and num2 > num3){
+        return num2;
+    }
+    else if (num3 > num1 and num3 > num2){
+        return num3;
+    }
+
+    return -1;
+
+
+var numero1 = 0; // Introduce un numero
+var numero2 = 0; // Introduce un numero
+var numero3 = 0; // Introduce un numero
+
+print "El número mayor es: ";
+print mayor();

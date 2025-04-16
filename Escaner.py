@@ -8,23 +8,19 @@ class Escaner:
         self.tokens = []
         self.actual = 0
         self.linea = 1
-        self.pila_parentesis = []# Para verificar balance de paréntesis
+        self.pila_parentesis = []  # Para balance de paréntesis y llaves
 
     def verificar_cabecera_for(self):
-        """
-        Verifica que la cabecera del for tenga exactamente dos ';' y esté bien balanceada.
-        """
-        # Saltar espacios y saltos de línea antes del paréntesis
+        # Saltar espacios
         while self.actual < len(self.fuente) and self.fuente[self.actual].isspace():
             if self.fuente[self.actual] == "\n":
                 self.linea += 1
             self.actual += 1
 
-        # Debe haber un '('
         if self.actual >= len(self.fuente) or self.fuente[self.actual] != '(':
             raise SyntaxError(f"Error sintáctico en la línea {self.linea}: se esperaba '(' después de 'for'.")
 
-        self.actual += 1  # Saltar el '('
+        self.actual += 1  # Saltar '('
 
         contenido = ""
         profundidad = 1
@@ -49,86 +45,101 @@ class Escaner:
         n_puntosycoma = contenido.count(";")
         if n_puntosycoma != 2:
             raise SyntaxError(
-                f"Error sintáctico en la línea {self.linea}: la cabecera del for debe tener 2 ';', pero tiene {n_puntosycoma}. "
-                f"Cabecera: ({contenido.strip()})"
+                f"Error sintáctico en la línea {self.linea}: la cabecera del for debe tener 2 ';', pero tiene {n_puntosycoma}. Cabecera: ({contenido.strip()})"
             )
-        self.actual += 1  # Saltar el ')'
+        self.actual += 1  # Saltar ')'
+
+    def verificar_parametros_funcion(self):
+        # Saltar espacios en blanco
+        while self.actual < len(self.fuente) and self.fuente[self.actual].isspace():
+            if self.fuente[self.actual] == "\n":
+                self.linea += 1
+            self.actual += 1
+
+        # Leer nombre de la función (identificador)
+        inicio_nombre = self.actual
+        while self.actual < len(self.fuente) and (self.fuente[self.actual].isalnum() or self.fuente[self.actual] == "_"):
+            self.actual += 1
+        nombre_funcion = self.fuente[inicio_nombre:self.actual].strip()
+
+        # Saltar espacios en blanco otra vez
+        while self.actual < len(self.fuente) and self.fuente[self.actual].isspace():
+            if self.fuente[self.actual] == "\n":
+                self.linea += 1
+            self.actual += 1
+
+        # Debe aparecer un '('
+        if self.actual >= len(self.fuente) or self.fuente[self.actual] != '(':
+            raise SyntaxError(f"Error sintáctico en la línea {self.linea}: se esperaba '(' después del nombre de la función '{nombre_funcion}'.")
+
+        self.actual += 1  # Saltar '('
+
+        parametros = ''
+        profundidad = 1
+        while self.actual < len(self.fuente) and profundidad > 0:
+            c = self.fuente[self.actual]
+            if c == '(':
+                profundidad += 1
+            elif c == ')':
+                profundidad -= 1
+                if profundidad == 0:
+                    if parametros.rstrip().endswith(','):
+                        raise SyntaxError(
+                            f"Error sintáctico en la línea {self.linea}: no debe haber una coma antes de ')'. Parámetros: ({parametros.strip()})"
+                        )
+                    break
+            if profundidad > 0:
+                parametros += c
+            if c == '\n':
+                self.linea += 1
+            self.actual += 1
+
+        if profundidad != 0:
+            raise SyntaxError(f"Error sintáctico en la línea {self.linea}: se esperaba ')' en parámetros de función.")
+        self.actual += 1  # Saltar ')'
 
     def escanear_tokens(self):
-        """
-        Escanea el código fuente y devuelve la lista de tokens.
-        Si hay errores, los reporta de inmediato.
-        """
         while self.actual < len(self.fuente):
             caracter = self.fuente[self.actual]
-
             if caracter.isspace():
                 if caracter == "\n":
                     self.linea += 1
                 self.actual += 1
-
             elif caracter == "/" and self.siguiente_es("/"):
                 self.saltar_comentario_linea()
-
             elif caracter == "/" and self.siguiente_es("*"):
                 self.saltar_comentario_bloque()
-
-            elif caracter in OPERADORES:
-                self.manejar_operador()
-
-            elif caracter in PUNTUACION:
-                self.manejar_puntuacion(caracter)
-
-            elif caracter == '"':
-                self.manejar_cadena()
-
-            elif caracter.isdigit():
-                self.manejar_numero()
-
             elif caracter.isalpha() or caracter == "_":
                 self.manejar_identificador()
-
-            else:
-                self.reportar_error(f"Carácter inesperado '{caracter}'.")
+            elif caracter in PUNTUACION:
+                self.manejar_puntuacion(caracter)
                 self.actual += 1
+            elif caracter == '"' or caracter == "'":
+                self.manejar_cadena(caracter)
+            elif caracter.isdigit():
+                self.manejar_numero()
+            else:
+                self.actual += 1  # Ignorar otros caracteres por ahora
 
-        # Si hay paréntesis no balanceados, arrojar un error
         if self.pila_parentesis:
-            linea_error = self.pila_parentesis[-1]  # La línea del paréntesis que no se cerró
-            raise SyntaxError(f"Error sintáctico en la línea {linea_error}. Se esperaba ')' pero no se encontró.")
-
-        self.agregar_token("EOF")
-        return self.tokens
-
-    def manejar_puntuacion(self, caracter):
-        """
-        Maneja puntuación y verifica paréntesis balanceados.
-        """
-        if caracter == "(":
-            self.pila_parentesis.append(self.linea)  # Registra la línea del paréntesis abierto
-        elif caracter == ")":
-            if not self.pila_parentesis:
-                raise SyntaxError(f"Error sintáctico en la línea {self.linea}. Se encontró ')' sin un '(' correspondiente.")
-            self.pila_parentesis.pop()  # Elimina el paréntesis correctamente balanceado
-
-        self.agregar_token(caracter)
-        self.actual += 1
+            char, linea = self.pila_parentesis[-1]
+            if char == "{":
+                raise SyntaxError(f"Error sintáctico en la línea {linea}: Se esperaba '}}' pero no se encontró.")
+            else:
+                raise SyntaxError(f"Error sintáctico en la línea {linea}: Se esperaba ')' pero no se encontró.")
 
     def manejar_identificador(self):
-        """
-        Maneja palabras clave, identificadores y detecta errores sintácticos en palabras clave mal escritas.
-        """
         inicio = self.actual
         while self.actual < len(self.fuente) and (self.fuente[self.actual].isalnum() or self.fuente[self.actual] == "_"):
             self.actual += 1
         lexema = self.fuente[inicio:self.actual]
-
-
         if lexema in PALABRAS_CLAVE:
             self.agregar_token(PALABRAS_CLAVE[lexema])
-
+            if lexema == "for":
+                self.verificar_cabecera_for()
+            elif lexema == "fun":
+                self.verificar_parametros_funcion()
         else:
-            # Verificar si es similar a alguna palabra clave conocida
             sugerencias = difflib.get_close_matches(lexema, PALABRAS_CLAVE.keys(), n=1, cutoff=0.8)
             if sugerencias:
                 sugerencia = sugerencias[0]
@@ -136,52 +147,47 @@ class Escaner:
             else:
                 self.agregar_token("IDENTIFICADOR", lexema)
 
-    def manejar_operador(self):
-        if self.actual + 1 < len(self.fuente):  # Verifica si hay un carácter siguiente.
-            combinacion = self.fuente[self.actual:self.actual + 2]
-            if combinacion in OPERADORES:
-                self.agregar_token(combinacion)
-                self.actual += 2
-                return
-        if self.fuente[self.actual] in OPERADORES:
-            self.agregar_token(self.fuente[self.actual])
-        self.actual += 1
+    def manejar_puntuacion(self, caracter):
+        if caracter in "({":
+            self.pila_parentesis.append((caracter, self.linea))
+        elif caracter == ")":
+            if not self.pila_parentesis or self.pila_parentesis[-1][0] != "(":
+                raise SyntaxError(f"Error sintáctico en la línea {self.linea}: Se encontró ')' sin un '(' correspondiente.")
+            self.pila_parentesis.pop()
+        elif caracter == "}":
+            if not self.pila_parentesis or self.pila_parentesis[-1][0] != "{":
+                raise SyntaxError(f"Error sintáctico en la línea {self.linea}: Se encontró '}}' sin un '{{' correspondiente.")
+            self.pila_parentesis.pop()
+        self.agregar_token(caracter)
 
-    def manejar_cadena(self):
-        inicio = self.actual + 1
+    def manejar_cadena(self, delimitador):
         self.actual += 1
-
-        while self.actual < len(self.fuente) and self.fuente[self.actual] != '"':
+        inicio = self.actual
+        while self.actual < len(self.fuente) and self.fuente[self.actual] != delimitador:
             if self.fuente[self.actual] == "\n":
                 self.linea += 1
             self.actual += 1
-
-        if self.actual >= len(self.fuente):  # Si llega al final sin encontrar el cierre.
-            raise SyntaxError(f"Error sintáctico en la línea {self.linea}. Se esperaba '\"'.")
-        else:
-            self.actual += 1
-            valor = self.fuente[inicio:self.actual - 1]
-            self.agregar_token("CADENA", valor)
+        if self.actual >= len(self.fuente):
+            raise SyntaxError(f"Error sintáctico en la línea {self.linea}: cadena no cerrada.")
+        valor = self.fuente[inicio:self.actual]
+        self.actual += 1  # Saltar delimitador de cierre
+        self.agregar_token("CADENA", valor)
 
     def manejar_numero(self):
         inicio = self.actual
         while self.actual < len(self.fuente) and self.fuente[self.actual].isdigit():
             self.actual += 1
-
         if self.actual < len(self.fuente) and self.fuente[self.actual] == "." and self.peek_proximo().isdigit():
             self.actual += 1
             while self.actual < len(self.fuente) and self.fuente[self.actual].isdigit():
                 self.actual += 1
-
         valor = self.fuente[inicio:self.actual]
         self.agregar_token("NUMERO", float(valor))
 
     def siguiente_es(self, esperado):
-        """Verifica si el siguiente carácter coincide con el esperado."""
         return self.actual + 1 < len(self.fuente) and self.fuente[self.actual + 1] == esperado
 
     def peek_proximo(self):
-        """Devuelve el carácter después del siguiente (para números decimales)."""
         if self.actual + 1 < len(self.fuente):
             return self.fuente[self.actual + 1]
         return "\0"
@@ -199,7 +205,7 @@ class Escaner:
             if self.fuente[self.actual] == "\n":
                 self.linea += 1
             self.actual += 1
-        raise SyntaxError(f"Error sintáctico en la línea {self.linea}. Se esperaba '*/' para cerrar el bloque.")
+        raise SyntaxError(f"Error sintáctico en la línea {self.linea}: se esperaba '*/' para cerrar el bloque.")
 
     def agregar_token(self, tipo, literal=None):
         texto = self.fuente[self.actual - 1] if self.actual > 0 else ""
@@ -208,22 +214,17 @@ class Escaner:
     def reportar_error(self, param):
         pass
 
-
 def analizar_archivo(ruta_archivo):
     try:
         with open(ruta_archivo, 'r', encoding='utf-8') as archivo:
             codigo_fuente = archivo.read()
-
         escaner = Escaner(codigo_fuente)
         escaner.escanear_tokens()
-
-        # Ningún error: el código es válido.
         print("Código válido")
     except SyntaxError as e:
         print(e)
     except Exception as e:
         print(f"Error inesperado: {e}")
-
 
 if __name__ == "__main__":
     if len(sys.argv) == 2:
